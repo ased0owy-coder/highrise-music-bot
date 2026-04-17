@@ -27,7 +27,7 @@ class StreamSettings:
     ZENO_PORT = 80
     ZENO_USERNAME = "source"
     ZENO_MOUNT_POINT = "60rfrcy14kmvv"
-    ZENO_PASSWORD = os.environ.get("ZENO_PASSWORD", "lUZG9WeQ")
+    ZENO_PASSWORD = "lUZG9WeQ"
     ZENO_ENCODING = "MP3"
     MIN_SONG_DURATION = 30
     MAX_RETRY_ATTEMPTS = 3
@@ -42,8 +42,8 @@ class LogSettings:
 @dataclass
 class HighriseSettings:
     """إعدادات Highrise"""
-    BOT_TOKEN = os.environ.get("HIGHRISE_BOT_TOKEN", "a491ead4b09decabf6baa7c174486025062bd2bdcd4baed384e87c12887c8dda")
-    ROOM_ID = os.environ.get("HIGHRISE_ROOM_ID", "69e16f0953cad135111f0fab")
+    BOT_TOKEN = "a491ead4b09decabf6baa7c174486025062bd2bdcd4baed384e87c12887c8dda"
+    ROOM_ID = "69e16f0953cad135111f0fab"
     # قائمة الملاك - يمكن إضافة أكثر من مالك
     OWNERS = ["SKP6", "_S7Q", "9O.S", "SKP.6", "7_e", "SA_D27"]
     
