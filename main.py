@@ -8,6 +8,10 @@ import logging
 import threading
 import os
 import time
+import subprocess
+import urllib.request
+import tarfile
+import stat
 from datetime import datetime
 from pathlib import Path
 from flask import Flask
@@ -18,6 +22,45 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger('main')
+
+
+def ensure_ffmpeg():
+    """تنزيل ffmpeg تلقائياً إذا لم يكن موجوداً في النظام"""
+    result = subprocess.run(['which', 'ffmpeg'], capture_output=True)
+    if result.returncode == 0:
+        logger.info("✅ ffmpeg موجود في النظام")
+        return
+
+    bin_dir = Path(__file__).parent / 'bin'
+    ffmpeg_path = bin_dir / 'ffmpeg'
+
+    if ffmpeg_path.exists():
+        os.environ['PATH'] = str(bin_dir) + ':' + os.environ.get('PATH', '')
+        logger.info("✅ ffmpeg موجود في مجلد bin")
+        return
+
+    bin_dir.mkdir(exist_ok=True)
+    logger.info("📥 جاري تنزيل ffmpeg...")
+
+    try:
+        url = "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"
+        tarball = bin_dir / 'ffmpeg.tar.xz'
+        urllib.request.urlretrieve(url, tarball)
+
+        with tarfile.open(tarball, 'r:xz') as tar:
+            for member in tar.getmembers():
+                if member.name.endswith('/ffmpeg'):
+                    member.name = 'ffmpeg'
+                    tar.extract(member, bin_dir)
+                    break
+
+        tarball.unlink()
+        ffmpeg_path.chmod(ffmpeg_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+        os.environ['PATH'] = str(bin_dir) + ':' + os.environ.get('PATH', '')
+        logger.info("✅ تم تنزيل ffmpeg بنجاح")
+
+    except Exception as e:
+        logger.error(f"❌ فشل تنزيل ffmpeg: {e}")
 
 
 def run_streamer():
@@ -89,6 +132,8 @@ async def run_bot_async():
 def main():
     """تشغيل جميع الخدمات"""
     logger.info("🚀 بدء نظام Highrise Music Bot")
+
+    ensure_ffmpeg()
 
     Path("queue.txt").touch()
     Path("downloads").mkdir(exist_ok=True)
