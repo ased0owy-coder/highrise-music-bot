@@ -123,7 +123,9 @@ def run_keep_alive():
 
 
 def main():
-    print("🚀 بدء نظام Highrise Music Bot")
+    print("=" * 50)
+    print("🚀 الإصدار: v5 - 2026-04-17")
+    print("=" * 50)
 
     ensure_ffmpeg()
 
