@@ -122,7 +122,9 @@ async def run_bot_async():
             logger.info("🤖 جاري الاتصال بـ Highrise...")
             bot = MusicBot()
             await bot.run(room_id, bot_token)
-        except Exception as e:
+        except KeyboardInterrupt:
+            raise
+        except BaseException as e:
             logger.error(f"❌ Bot Error: {e}")
 
         logger.info("♻️ إعادة الاتصال في 10s...")
