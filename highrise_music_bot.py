@@ -331,10 +331,11 @@ class MusicBot(BaseBot):
             try:
                 logger.info("📡 Connecting to Highrise...")
                 await super().run(room_id, api_token)
-            except Exception as e:
+            except KeyboardInterrupt:
+                raise
+            except BaseException as e:
                 logger.error(f"⚠️ Connection error: {e}. Retrying in {retry_delay}s...")
                 await asyncio.sleep(retry_delay)
-                # زيادة وقت التأخير تدريجياً
                 retry_delay = min(retry_delay * 1.5, 60)
             finally:
                 logger.info("♻️ Restarting audio stream if needed...")
