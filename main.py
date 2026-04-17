@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-ملف التشغيل الرئيسي - يشغل البوت وخدمة البث معاً
+ملف التشغيل الرئيسي
 """
 
-import asyncio
+import subprocess
 import logging
 import threading
 import os
+import sys
 import time
-import subprocess
 import urllib.request
 import tarfile
 import stat
@@ -25,10 +25,9 @@ logger = logging.getLogger('main')
 
 
 def ensure_ffmpeg():
-    """تنزيل ffmpeg تلقائياً إذا لم يكن موجوداً في النظام"""
+    """تنزيل ffmpeg تلقائياً إذا لم يكن موجوداً"""
     result = subprocess.run(['which', 'ffmpeg'], capture_output=True)
     if result.returncode == 0:
-        logger.info("✅ ffmpeg موجود في النظام")
         return
 
     bin_dir = Path(__file__).parent / 'bin'
@@ -36,11 +35,10 @@ def ensure_ffmpeg():
 
     if ffmpeg_path.exists():
         os.environ['PATH'] = str(bin_dir) + ':' + os.environ.get('PATH', '')
-        logger.info("✅ ffmpeg موجود في مجلد bin")
         return
 
     bin_dir.mkdir(exist_ok=True)
-    logger.info("📥 جاري تنزيل ffmpeg...")
+    print("📥 جاري تنزيل ffmpeg...")
 
     try:
         url = "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"
@@ -57,24 +55,39 @@ def ensure_ffmpeg():
         tarball.unlink()
         ffmpeg_path.chmod(ffmpeg_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
         os.environ['PATH'] = str(bin_dir) + ':' + os.environ.get('PATH', '')
-        logger.info("✅ تم تنزيل ffmpeg بنجاح")
-
+        print("✅ تم تنزيل ffmpeg")
     except Exception as e:
-        logger.error(f"❌ فشل تنزيل ffmpeg: {e}")
+        print(f"⚠️ لم يتم تنزيل ffmpeg: {e}")
+
+
+def run_bot():
+    """تشغيل البوت في subprocess مع إعادة التشغيل التلقائي"""
+    while True:
+        try:
+            print("🤖 جاري تشغيل البوت...")
+            result = subprocess.run([
+                sys.executable, "-m", "highrise",
+                "highrise_music_bot:MusicBot",
+                HighriseSettings.ROOM_ID,
+                HighriseSettings.BOT_TOKEN
+            ])
+            print(f"⚠️ البوت خرج بكود {result.returncode}، إعادة تشغيل...")
+        except Exception as e:
+            print(f"❌ خطأ في البوت: {e}")
+        time.sleep(10)
 
 
 def run_streamer():
-    """تشغيل خدمة البث في خيط منفصل"""
+    """تشغيل خدمة البث"""
     while True:
         try:
             time.sleep(8)
-            logger.info("📡 تشغيل خدمة البث...")
+            print("📡 تشغيل خدمة البث...")
             from streamer import ZenoStreamer
             streamer = ZenoStreamer()
             streamer.run()
         except Exception as e:
-            logger.error(f"❌ خطأ في البث: {e}")
-        logger.info("♻️ إعادة تشغيل البث في 15s...")
+            print(f"❌ خطأ في البث: {e}")
         time.sleep(15)
 
 
@@ -82,12 +95,11 @@ def run_updates_server():
     """تشغيل سيرفر التحديثات"""
     try:
         time.sleep(3)
-        from updates_manager import app
+        from updates_manager import app as updates_app
         port = int(os.environ.get('UPDATES_PORT', 8080))
-        logger.info(f"🔄 سيرفر التحديثات على البورت {port}")
-        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+        updates_app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
     except Exception as e:
-        logger.error(f"❌ خطأ في سيرفر التحديثات: {e}")
+        print(f"❌ خطأ في سيرفر التحديثات: {e}")
 
 
 keep_alive_app = Flask(__name__)
@@ -104,36 +116,14 @@ def home():
 def run_keep_alive():
     try:
         port = int(os.environ.get('PORT', 3000))
-        logger.info(f"🌐 Keep Alive على البورت {port}")
+        print(f"🌐 Keep Alive على البورت {port}")
         keep_alive_app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
     except Exception as e:
-        logger.error(f"❌ Keep Alive Error: {e}")
-
-
-async def run_bot_async():
-    """تشغيل البوت مباشرةً بدون subprocess"""
-    from highrise_music_bot import MusicBot
-
-    bot_token = HighriseSettings.BOT_TOKEN
-    room_id = HighriseSettings.ROOM_ID
-
-    while True:
-        try:
-            logger.info("🤖 جاري الاتصال بـ Highrise...")
-            bot = MusicBot()
-            await bot.run(room_id, bot_token)
-        except KeyboardInterrupt:
-            raise
-        except BaseException as e:
-            logger.error(f"❌ Bot Error: {e}")
-
-        logger.info("♻️ إعادة الاتصال في 10s...")
-        await asyncio.sleep(10)
+        print(f"❌ Keep Alive Error: {e}")
 
 
 def main():
-    """تشغيل جميع الخدمات"""
-    logger.info("🚀 بدء نظام Highrise Music Bot")
+    print("🚀 بدء نظام Highrise Music Bot")
 
     ensure_ffmpeg()
 
@@ -145,9 +135,12 @@ def main():
     threading.Thread(target=run_keep_alive, daemon=True).start()
     threading.Thread(target=run_updates_server, daemon=True).start()
     threading.Thread(target=run_streamer, daemon=True).start()
+    threading.Thread(target=run_bot, daemon=True).start()
 
-    # تشغيل البوت في الحلقة الرئيسية لـ asyncio
-    asyncio.run(run_bot_async())
+    # الخيط الرئيسي يبقى شغّالاً إلى الأبد
+    print("✅ جميع الخدمات شغّالة")
+    while True:
+        time.sleep(30)
 
 
 if __name__ == "__main__":
