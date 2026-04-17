@@ -1,0 +1,13 @@
+[project]
+name = "highrise-music-bot"
+version = "1.0.0"
+description = "Highrise Music Bot with Zeno.fm Streaming"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.9.0",
+    "highrise-bot-sdk==24.1.0",
+    "requests>=2.31.0",
+    "yt-dlp>=2024.1.0",
+    "flask>=3.0.0",
+    "werkzeug>=3.0.0",
+]
